@@ -7,6 +7,7 @@ import {
     ThemeProvider,
     responsiveFontSizes,
 } from "@mui/material/styles";
+import headerImage from "./images/header.png";
 
 const theme = responsiveFontSizes(createTheme());
 
@@ -14,9 +15,13 @@ function App() {
     return (
         <ThemeProvider theme={theme}>
             <div className={styles.container}>
-                <header className={styles.header}>
-                    <h1>Balancer Pro</h1>
-                </header>
+                <div>
+                    <img
+                        alt="Header"
+                        src={headerImage}
+                        className={styles.img}
+                    />
+                </div>
                 <Stack direction="row" className={styles.mainRow}>
                     <div style={{ flex: 0.1 }} />
                     <EquationDisplay />

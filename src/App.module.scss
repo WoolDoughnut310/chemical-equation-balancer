@@ -1,3 +1,24 @@
+@media screen and (min-width: 900px) {
+    .img {
+        width: 390px;
+        height: 100px;
+    }
+}
+
+@media screen and (max-width: 900px) {
+    .img {
+        width: 292.5px;
+        height: 75px;
+    }
+}
+
+@media screen and (max-width: 600px) {
+    .img {
+        width: 195px;
+        height: 50px;
+    }
+}
+
 .container {
     display: flex;
     min-height: calc(100vh - 60px);
@@ -10,15 +31,6 @@
     background-image: url(./images/background.jpg);
     background-repeat: no-repeat;
     background-size: cover;
-}
-
-.header {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    flex: 0 1;
-    font-family: "Rubik", sans-serif;
-    font-weight: bold;
 }
 
 .footerLabel {
