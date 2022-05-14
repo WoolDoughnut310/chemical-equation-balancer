@@ -1,0 +1,39 @@
+.container {
+    display: flex;
+    min-height: calc(100vh - 60px);
+    overflow: none;
+    flex: 1;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 30px;
+    background-image: url(./images/background.jpg);
+    background-repeat: no-repeat;
+    background-size: cover;
+}
+
+.header {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex: 0 1;
+    font-family: "Rubik", sans-serif;
+    font-weight: bold;
+}
+
+.footerLabel {
+    position: absolute;
+    bottom: 0;
+    right: 10px;
+    background-color: aqua;
+    padding: 10px;
+    border-top-left-radius: 10px;
+    border-top-right-radius: 10px;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.mainRow {
+    width: 100%;
+    flex: 1;
+}
