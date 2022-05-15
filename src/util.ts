@@ -1,8 +1,4 @@
-import {
-    ChemicalCompound,
-    ChemicalCompoundRelationship,
-    Errors,
-} from "./types";
+import { ChemicalCompound, Errors } from "./types";
 
 export const EQUATION_ARROWS = ["->", "<>"];
 const CHEMICAL_SYMBOLS = [
