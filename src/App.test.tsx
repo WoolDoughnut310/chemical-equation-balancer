@@ -4,6 +4,6 @@ import App from "./App";
 
 test("renders title", () => {
     render(<App />);
-    const titleElement = screen.getByText(/chemical equation balancer/i);
+    const titleElement = screen.getByText(/Created by Joseph Nma./i);
     expect(titleElement).toBeInTheDocument();
 });
