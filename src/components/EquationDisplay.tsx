@@ -12,7 +12,7 @@ import Slide from "@mui/material/Slide";
 import Fab from "@mui/material/Fab";
 import EquationInput from "./EquationInput";
 import {
-    balanceCompounds,
+    balanceEquation,
     EQUATION_ARROWS,
     splitEquationString,
     validateEquationParts,
@@ -23,7 +23,8 @@ export default function EquationDisplay() {
     const [reversible, setReversible] = useState(false);
     const [rawReactants, setRawReactants] = useState<string[]>([]);
     const [rawProducts, setRawProducts] = useState<string[]>([]);
-    const [compounds, setCompounds] = useState<ChemicalCompound[]>([]);
+    const [reactants, setReactants] = useState<ChemicalCompound[]>([]);
+    const [products, setProducts] = useState<ChemicalCompound[]>([]);
     const [inputDialogPos, setInputDialogPos] = useState<[number, number]>([
         0, 0,
     ]);
@@ -82,25 +83,18 @@ export default function EquationDisplay() {
             }
         }
 
-        const totalBalancingNumbers = balanceCompounds(compounds);
-        const reactantBalancingNumbers = totalBalancingNumbers.slice(
-            0,
-            rawReactants.length
-        );
-        const productBalancingNumbers = totalBalancingNumbers.slice(
-            rawReactants.length
-        );
-        setBalancingNumbers([
-            reactantBalancingNumbers,
-            productBalancingNumbers,
-        ]);
+        const totalBalancingNumbers = balanceEquation(reactants, products);
+        setBalancingNumbers(totalBalancingNumbers);
     };
 
     useEffect(() => {
+        if (equationInput === "") setError("");
+        setBalancingNumbers([[], []]);
         const equationParts = splitEquationString(equationInput);
         setRawReactants(equationParts.rawReactants);
         setRawProducts(equationParts.rawProducts);
-        setCompounds(equationParts.compounds);
+        setReactants(equationParts.reactants);
+        setProducts(equationParts.products);
         setSideElements(equationParts.elements);
         if (equationParts.reversible !== null) {
             setReversible(equationParts.reversible);
