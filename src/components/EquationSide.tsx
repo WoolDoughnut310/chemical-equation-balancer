@@ -23,9 +23,11 @@ export default function EquationSide({ compounds, balancingNumbers }: Props) {
             const charCode = char.charCodeAt(0);
             const isNumber = !isNaN(parseInt(char));
 
+            // Alphabet character or brackets
             if (
                 (charCode >= 65 && charCode <= 90) ||
-                (charCode >= 97 && charCode <= 122)
+                (charCode >= 97 && charCode <= 122) ||
+                [40, 41].includes(charCode)
             ) {
                 // If previous character(s) were number(s), end subscript tag
                 if (inSubscript) {

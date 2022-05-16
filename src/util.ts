@@ -156,6 +156,20 @@ export const splitEquationString = (
     let element = "";
     let elementValue = "";
     let reversible: null | boolean = null;
+    let multiplier: {
+        from: number;
+        to: number;
+        scale: number;
+        compoundStart: number;
+        compoundEnd: number;
+    } = {
+        from: -1,
+        to: -1,
+        scale: 0,
+        compoundStart: -1,
+        compoundEnd: -1,
+    };
+    const rawString = equationString.replace(" ", "");
 
     const appendElement = () => {
         if (element === "") return;
@@ -196,13 +210,100 @@ export const splitEquationString = (
         elementValue = "";
     };
 
+    const multiplyElements = () => {
+        if (
+            multiplier.from === -1 ||
+            multiplier.to === -1 ||
+            multiplier.scale <= 1
+        )
+            return;
+
+        const scale = multiplier.scale;
+
+        const rawCompoundSide = !reachedProducts ? rawReactants : rawProducts;
+        const originalRawCompound = rawCompoundSide[compoundIndex];
+        let currentValue = "";
+        let currentElement = "";
+        let elements: { [key: string]: number } = {};
+
+        for (let i = 0; i < rawString.length; i++) {
+            // Allow only the from-to range
+            if (i < multiplier.from || i >= multiplier.to) continue;
+
+            const char = rawString[i];
+            const charCode = char.charCodeAt(0);
+            const gotNumeric = !isNaN(parseInt(char));
+
+            if (charCode >= 65 && charCode <= 90 && i !== multiplier.from) {
+                // If previous element was given no value
+                elements[currentElement] =
+                    currentValue === "" ? 1 : parseInt(currentValue);
+                currentValue = "";
+            }
+
+            if (charCode >= 65 && charCode <= 90) {
+                currentElement = "";
+                currentElement = currentElement.concat(char);
+            }
+
+            if (charCode >= 97 && charCode <= 122) {
+                currentElement = currentElement.concat(char);
+            }
+
+            if (gotNumeric) {
+                // Append char to value string
+                currentValue = currentValue.concat(char);
+            }
+
+            if (i === multiplier.to - 1) {
+                // If previous element was given no value
+                elements[currentElement] =
+                    currentValue === "" ? 1 : parseInt(currentValue);
+                currentValue = "";
+            }
+        }
+
+        // Splice the section from the raw string and add brackets
+        let rawCompound = originalRawCompound;
+        let scalingSplice = rawString.slice(multiplier.from, multiplier.to);
+        rawCompound = rawString.slice(
+            multiplier.compoundStart,
+            multiplier.from
+        );
+
+        if (scale !== 0) {
+            rawCompound = rawCompound.concat(scalingSplice);
+        }
+
+        rawCompound = rawCompound.concat(
+            rawString.slice(multiplier.to, multiplier.compoundEnd + 1)
+        );
+
+        rawCompoundSide[compoundIndex] = rawCompound;
+
+        const compoundSide = !reachedProducts ? reactants : products;
+        for (let element of Object.keys(elements)) {
+            const compound = compoundSide[compoundIndex];
+            let newNumber = elements[element] * scale;
+
+            // Take of the spliced section element's affect
+            // on overall number, and then add scaled number
+            let value = compound[element] - elements[element] + newNumber;
+            compound[element] = value;
+        }
+
+        multiplier.from = -1;
+        multiplier.to = -1;
+        multiplier.scale = 0;
+    };
+
     const skipElement = () => {
         element = "";
         elementValue = "";
     };
 
-    // Sanitise string and split into compounds
-    const rawString = equationString.replace(" ", "");
+    // Split into compounds
+    let lastcompoundStart = 0;
     for (let i = 0; i < rawString.length; i++) {
         const char = rawString[i];
         const charCode = char.charCodeAt(0);
@@ -220,7 +321,12 @@ export const splitEquationString = (
         if (char === "+") {
             // Reached the end of a compound, also an element
             appendElement();
+
+            // Scale element values if brackets were used previously
+            multiplyElements();
+
             compoundIndex++;
+            lastcompoundStart = i + 1;
             continue;
         }
 
@@ -233,6 +339,7 @@ export const splitEquationString = (
         if (charCode >= 65 && charCode <= 90) {
             // Reached a new element (uppercase alphabet character)
             appendElement();
+            multiplyElements();
             element = element.concat(char);
         } else if (element !== "" && charCode >= 97 && charCode <= 122) {
             // Reached a lowercase alphabet character
@@ -247,9 +354,25 @@ export const splitEquationString = (
         } else if (element !== "" && !isNaN(parseInt(char))) {
             // Got a number for element value
             elementValue = elementValue.concat(char);
+        } else if (multiplier.from === -1 && char === "(") {
+            // Got an open bracket, with none previously
+            multiplier.from = i + 1;
+            multiplier.compoundStart = lastcompoundStart;
+            appendElement();
+        } else if (multiplier.from !== -1 && char === ")") {
+            multiplier.to = i;
+            appendElement();
+        } else if (multiplier.from !== -1 && multiplier.to !== -1) {
+            if (char === "_" && multiplier.scale !== 0) {
+                // If got underscore but scale already exists
+                multiplier.scale = 0;
+                continue;
+            } else if (!isNaN(parseInt(char))) {
+                // If got a number after the closed bracket
+                multiplier.scale = multiplier.scale * 10 + parseInt(char);
+                multiplier.compoundEnd = i;
+            }
         } else {
-            console.log("hahah");
-            console.log(element, elementValue);
             // Got an unexpected character, skip compound
             skipElement();
             continue;
@@ -258,6 +381,7 @@ export const splitEquationString = (
         if (i === rawString.length - 1) {
             // If last character is reached
             appendElement();
+            multiplyElements();
         }
     }
 
