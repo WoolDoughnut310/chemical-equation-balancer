@@ -141,16 +141,18 @@ export const splitEquationString = (
     // compounds: ChemicalCompound[];
     reactants: ChemicalCompound[];
     products: ChemicalCompound[];
+    ions: [ChemicalCompound[], ChemicalCompound[]];
     reversible: boolean | null;
 } => {
     // const compounds: ChemicalCompound[] = [];
     const reactants: ChemicalCompound[] = [];
     const products: ChemicalCompound[] = [];
+    const ions: [ChemicalCompound[], ChemicalCompound[]] = [[], []];
 
     const rawReactants: string[] = [];
     const rawProducts: string[] = [];
-    const reactantElements = new Set<string>();
-    const productElements = new Set<string>();
+    const reactantElements: string[] = [];
+    const productElements: string[] = [];
     let reachedProducts = false;
     let compoundIndex = 0;
     let element = "";
@@ -169,6 +171,12 @@ export const splitEquationString = (
         compoundStart: -1,
         compoundEnd: -1,
     };
+    let currentIon: null | {
+        charge: number;
+        start: number;
+        end: number;
+        sign: number;
+    } = null;
     const rawString = equationString.replace(" ", "");
 
     const appendElement = () => {
@@ -195,7 +203,7 @@ export const splitEquationString = (
         const elementsSide = !reachedProducts
             ? reactantElements
             : productElements;
-        elementsSide.add(element);
+        elementsSide.push(element);
 
         // const globalCompoundsIndex = !reachedProducts
         //     ? compoundIndex
@@ -303,10 +311,11 @@ export const splitEquationString = (
     };
 
     // Split into compounds
-    let lastcompoundStart = 0;
+    let lastCompoundStart = 0;
     for (let i = 0; i < rawString.length; i++) {
         const char = rawString[i];
         const charCode = char.charCodeAt(0);
+        const gotNumeric = !isNaN(parseInt(char));
 
         if (EQUATION_ARROWS.includes(char.concat(rawString[i + 1]))) {
             // Reached an arrow
@@ -318,7 +327,7 @@ export const splitEquationString = (
             continue;
         }
 
-        if (char === "+") {
+        if (currentIon === null && char === "+") {
             // Reached the end of a compound, also an element
             appendElement();
 
@@ -326,7 +335,7 @@ export const splitEquationString = (
             multiplyElements();
 
             compoundIndex++;
-            lastcompoundStart = i + 1;
+            lastCompoundStart = i + 1;
             continue;
         }
 
@@ -351,13 +360,13 @@ export const splitEquationString = (
                 skipElement();
                 continue;
             }
-        } else if (element !== "" && !isNaN(parseInt(char))) {
+        } else if (currentIon === null && element !== "" && gotNumeric) {
             // Got a number for element value
             elementValue = elementValue.concat(char);
         } else if (multiplier.from === -1 && char === "(") {
             // Got an open bracket, with none previously
             multiplier.from = i + 1;
-            multiplier.compoundStart = lastcompoundStart;
+            multiplier.compoundStart = lastCompoundStart;
             appendElement();
         } else if (multiplier.from !== -1 && char === ")") {
             multiplier.to = i;
@@ -367,11 +376,71 @@ export const splitEquationString = (
                 // If got underscore but scale already exists
                 multiplier.scale = 0;
                 continue;
-            } else if (!isNaN(parseInt(char))) {
+            } else if (gotNumeric) {
                 // If got a number after the closed bracket
                 multiplier.scale = multiplier.scale * 10 + parseInt(char);
                 multiplier.compoundEnd = i;
             }
+        } else if (
+            currentIon === null &&
+            char === "[" &&
+            (element !== "" || elementValue !== "")
+        ) {
+            // Started ion bracket
+            currentIon = {
+                charge: 0,
+                start: lastCompoundStart,
+                end: i,
+                sign: 0,
+            };
+            appendElement();
+        } else if (currentIon !== null && gotNumeric) {
+            // Got a number for the ion, add number to last place
+            currentIon.charge = currentIon.charge * 10 + parseInt(char);
+        } else if (
+            currentIon !== null &&
+            currentIon.sign === 0 &&
+            [43, 45].includes(charCode) &&
+            (currentIon.charge === 0 ||
+                (i !== rawString.length - 1 && rawString[i + 1] === "]"))
+        ) {
+            // If an ion has been started, a sign has not been given,
+            // the char is at the start or end of the ion, received + or -
+            currentIon.sign = charCode === 43 ? 1 : -1;
+        } else if (currentIon !== null && char === "]") {
+            // End ion bracket with ion charge entered
+            const charge = currentIon.charge * (currentIon.sign || 1);
+
+            const compoundSide = !reachedProducts ? reactants : products;
+            const compound = compoundSide[compoundIndex];
+
+            const compoundElements = Object.keys(compound);
+
+            // Remove from compounds
+            compoundSide.splice(compoundIndex, 1);
+
+            const rawCompoundSide = !reachedProducts
+                ? rawReactants
+                : rawProducts;
+            const rawCompound = rawCompoundSide[compoundIndex];
+            const elementsSide = !reachedProducts
+                ? reactantElements
+                : productElements;
+            // Remove from raw compounds
+            rawCompoundSide.splice(compoundIndex, 1);
+
+            // Add to ions
+            ions[!reachedProducts ? 0 : 1].push({ [rawCompound]: charge });
+
+            for (let element of compoundElements) {
+                // Remove from list of elements on that side
+                elementsSide.splice(elementsSide.lastIndexOf(element));
+            }
+
+            // Decrement index for next compound(s)
+            compoundIndex--;
+
+            currentIon = null;
         } else {
             // Got an unexpected character, skip compound
             skipElement();
@@ -388,10 +457,11 @@ export const splitEquationString = (
     return {
         rawReactants,
         rawProducts,
-        elements: [reactantElements, productElements],
+        elements: [new Set(reactantElements), new Set(productElements)],
         // compounds,
         reactants,
         products,
+        ions,
         reversible,
     };
 };
