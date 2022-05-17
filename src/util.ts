@@ -447,6 +447,8 @@ export const balanceEquation = (
 
         let oldBalancingNumber = balancingNumbers[side][i];
         let balancingNumber = oldBalancingNumber;
+
+        // The amount of atoms on the side, excluding from the current compound
         const existingAtoms =
             sideAtoms[element] - balancingNumber * compound[element];
         balancingNumber =
@@ -455,6 +457,7 @@ export const balanceEquation = (
         sideAtoms[element] =
             existingAtoms + balancingNumber * compound[element];
 
+        // Update the amount of atoms for every other element in the compound
         for (let otherElement of Object.keys(compound)) {
             if (otherElement === element) continue;
             const otherExistingAtoms =
@@ -466,7 +469,9 @@ export const balanceEquation = (
 
         balancingNumbers[side][i] = balancingNumber;
 
+        // If balancing number is a decimal number
         if (balancingNumber % 1 < 1) {
+            // Scale to a whole number
             const scale = hcf(balancingNumber, 1) / balancingNumber;
 
             for (let i = 0; i < balancingNumbers.length; i++) {
@@ -483,6 +488,8 @@ export const balanceEquation = (
             });
         }
 
+        // Update the balancing numbers on any compounds that
+        // would have been affected because they contained a unique element
         if (uniqueElements.length > 0) {
             for (let key of Object.keys(compound)) {
                 if (element === key) continue;
@@ -499,6 +506,7 @@ export const balanceEquation = (
         }
     };
 
+    // Couting the amount of atoms of an element on each side
     for (let reactant of reactants) {
         for (let [element, value] of Object.entries(reactant)) {
             elements.add(element);
@@ -546,7 +554,11 @@ export const balanceEquation = (
                 const productCompoundElements = productElements[j];
                 if (!productCompoundElements.includes(element)) continue;
 
-                if (reactants[i][element] < products[j][element]) {
+                // Balance the compound on the side with less
+                if (
+                    reactants[i][element] <= products[j][element] &&
+                    balancingNumbers[0][i] <= balancingNumbers[1][j]
+                ) {
                     balanceCompound(i, 0, element);
                 } else {
                     balanceCompound(j, 1, element);
@@ -572,6 +584,7 @@ export const balanceEquation = (
             index: 0,
         };
 
+        // Find the compound with the smallest number of elements
         for (let i = 0; i < reactants.length; i++) {
             const reactant = reactants[i];
             const balancingNumber = balancingNumbers[0][i];
