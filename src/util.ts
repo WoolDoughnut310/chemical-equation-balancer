@@ -141,13 +141,13 @@ export const splitEquationString = (
     // compounds: ChemicalCompound[];
     reactants: ChemicalCompound[];
     products: ChemicalCompound[];
-    ions: [ChemicalCompound[], ChemicalCompound[]];
+    ions: [string[], string[]];
     reversible: boolean | null;
 } => {
     // const compounds: ChemicalCompound[] = [];
     const reactants: ChemicalCompound[] = [];
     const products: ChemicalCompound[] = [];
-    const ions: [ChemicalCompound[], ChemicalCompound[]] = [[], []];
+    const ions: [string[], string[]] = [[], []];
 
     const rawReactants: string[] = [];
     const rawProducts: string[] = [];
@@ -409,7 +409,8 @@ export const splitEquationString = (
             currentIon.sign = charCode === 43 ? 1 : -1;
         } else if (currentIon !== null && char === "]") {
             // End ion bracket with ion charge entered
-            const charge = currentIon.charge * (currentIon.sign || 1);
+            const sign = currentIon.sign || 1;
+            const charge = currentIon.charge * sign;
 
             const compoundSide = !reachedProducts ? reactants : products;
             const compound = compoundSide[compoundIndex];
@@ -429,8 +430,17 @@ export const splitEquationString = (
             // Remove from raw compounds
             rawCompoundSide.splice(compoundIndex, 1);
 
-            // Add to ions
-            ions[!reachedProducts ? 0 : 1].push({ [rawCompound]: charge });
+            const chargeString = Math.abs(charge)
+                .toString()
+                .concat(charge < 0 ? "-" : "+");
+
+            // Add to ions at compoundIndex, to signify the ion will
+            // be displayed before the compound at the next index
+            ions[!reachedProducts ? 0 : 1][compoundIndex] = rawCompound.concat(
+                "[",
+                chargeString,
+                "]"
+            );
 
             for (let element of compoundElements) {
                 // Remove from list of elements on that side

@@ -25,6 +25,7 @@ export default function EquationDisplay() {
     const [rawProducts, setRawProducts] = useState<string[]>([]);
     const [reactants, setReactants] = useState<ChemicalCompound[]>([]);
     const [products, setProducts] = useState<ChemicalCompound[]>([]);
+    const [ions, setIons] = useState<[string[], string[]]>([[], []]);
     const [inputDialogPos, setInputDialogPos] = useState<[number, number]>([
         0, 0,
     ]);
@@ -96,6 +97,7 @@ export default function EquationDisplay() {
         setReactants(equationParts.reactants);
         setProducts(equationParts.products);
         setSideElements(equationParts.elements);
+        setIons(equationParts.ions);
         if (equationParts.reversible !== null) {
             setReversible(equationParts.reversible);
         }
@@ -120,6 +122,7 @@ export default function EquationDisplay() {
                 <>
                     <EquationSide
                         compounds={rawReactants}
+                        ions={ions[0]}
                         balancingNumbers={balancingNumbers[0]}
                     />
                     {rawProducts.length > 0 && (
@@ -139,6 +142,7 @@ export default function EquationDisplay() {
                     {rawProducts.length > 0 && (
                         <EquationSide
                             compounds={rawProducts}
+                            ions={ions[1]}
                             balancingNumbers={balancingNumbers[1]}
                         />
                     )}
