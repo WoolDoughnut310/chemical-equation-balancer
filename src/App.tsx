@@ -1,4 +1,3 @@
-import React from "react";
 import styles from "./App.module.scss";
 import EquationDisplay from "./components/EquationDisplay";
 import Stack from "@mui/material/Stack";
@@ -7,7 +6,7 @@ import {
     ThemeProvider,
     responsiveFontSizes,
 } from "@mui/material/styles";
-import headerImage from "./images/header.png";
+import headerImage from "./images/header.webp";
 
 const theme = responsiveFontSizes(createTheme());
 
